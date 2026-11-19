@@ -1,0 +1,8 @@
+verdict={'PASS': 48, 'FAIL': 12}
+acc=1.000
+cause                contact_degradation  gas_leak  low_performance  none
+truth                                                                    
+contact_degradation                    3         0                0     0
+gas_leak                               0         7                0     0
+low_performance                        0         0                2     0
+none                                   0         0                0    48

@@ -1,0 +1,5 @@
+truth,contact_degradation,gas_leak,low_performance,none
+contact_degradation,3,0,0,0
+gas_leak,0,7,0,0
+low_performance,0,0,2,0
+none,0,0,0,48
