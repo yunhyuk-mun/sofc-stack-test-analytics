@@ -21,14 +21,16 @@ SLOPE_X = 3.0             # 기준 열화율 대비 가속 배수
 SLOPE_MIN = 1.5           # 가속 판정 절대 하한 [%/kh]
 
 
-def simulate(seed=7, hours=2000, v0=0.85):
+def simulate(seed=7, hours=2000, v0=0.85, noise=0.0015, events=True):
     rng = np.random.default_rng(seed)
     t = np.arange(0, hours + 1, 1.0)
     rate = np.full_like(t, 0.5 / 1000 / 100)               # 0.5 %/kh
-    rate[t >= 1500] = 3.5 / 1000 / 100                      # 1500 h 이후 가속 열화 3.5 %/kh
+    if events:
+        rate[t >= 1500] = 3.5 / 1000 / 100                  # 1500 h 이후 가속 열화 3.5 %/kh
     v = v0 * np.cumprod(1 - rate)
-    v[t >= 1100] -= 0.012                                   # 1100 h 급강하 12 mV
-    v += rng.normal(0, 0.0015, len(t))
+    if events:
+        v[t >= 1100] -= 0.012                               # 1100 h 급강하 12 mV
+    v += rng.normal(0, noise, len(t))
     return pd.DataFrame({"hour": t, "V": v})
 
 
