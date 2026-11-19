@@ -31,9 +31,9 @@ r = P(P.T_C == 750, :);
 total = (r.OCV - g.V) * 1000;
 ohm   = r.R_lin * g.j_A_cm2 * 1000;
 area([g.j_A_cm2], [total - ohm, ohm]);
-legend({'활성화 등 (총손실 - 옴)', '옴 + 선형 분극저항'}, 'Location', 'northwest');
+legend({'비선형 성분 (총손실 - 선형 저항분)', '선형 구간 저항분 (옴+분극+연료이용 영향)'}, 'Location', 'northwest');
 xlabel('전류밀도 [A/cm^2]'); ylabel('전압 손실 [mV]'); grid on;
-title('750 °C 손실 구간 분해 (실측 기반)');
+title('750 °C 손실 구간 분리 (실측 기반, 곡선 형상 기준)');
 exportgraphics(f2, fullfile(out, 'm_real_loss_split.png'), 'Resolution', 130);
 
 % 3) 시뮬레이션 장기 운전 전압과 탐지된 이벤트

@@ -3,7 +3,7 @@
 방법(모델 가정을 최소화한 구간 분해):
  1) 선형 구간: j >= J_LIN 에서 V = V0 - R_lin*j 로 직선 피팅. R_lin은 옴 저항 + 선형 분극저항의 합산 면적저항이다.
     분극 곡선만으로는 옴 저항만 따로 뽑을 수 없다. (분리하려면 EIS가 필요하다.)
- 2) 활성화 구간: 직선 아래로 급격히 벗어나는 저전류 구간. 총 손실에서 옴 성분(R_lin*j)을 뺀 값으로 정의한다.
+ 2) 비선형 구간: 직선 아래로 급격히 벗어나는 저전류 구간. 총 손실에서 선형 저항분(R_lin*j)을 뺀 값으로 정의한다. 활성화 손실만이 아니라 OCV 편차와 연료이용에 따른 손실도 포함한다.
  3) 농도 구간: 고전류 끝점 3개가 직선보다 아래로 얼마나 벗어나는지(mV)로 판정한다. 임계값은 가정값이다.
 """
 import os, sys
@@ -60,11 +60,11 @@ if __name__ == "__main__":
     gg = g[g.j_A_cm2 > 0]
     total = (p["OCV"] - gg.V.values) * 1000
     ohm = p["R_lin"] * gg.j_A_cm2.values * 1000
-    ax[1].stackplot(gg.j_A_cm2.values, total - ohm, ohm, labels=["활성화 등 (총손실 - 옴)", "옴 + 선형 분극저항"],
+    ax[1].stackplot(gg.j_A_cm2.values, total - ohm, ohm, labels=["비선형 성분 (총손실 - 선형 저항분)", "선형 구간 저항분 (옴 + 분극 + 연료이용 영향)"],
                     colors=["#e8a33d", "#4a7fb5"])
     ax[1].axvline(J_LIN, color="k", ls=":"); ax[1].text(J_LIN + .01, 10, "선형 구간 시작", fontsize=8)
     ax[1].set_xlabel("전류밀도 [A/cm²]"); ax[1].set_ylabel("전압 손실 [mV]")
-    ax[1].set_title("750 °C 손실 구간 분해 (실측 기반)"); ax[1].legend(loc="upper left"); ax[1].grid(alpha=.3)
+    ax[1].set_title("750 °C 손실 구간 분리 (실측 기반, 곡선 형상 기준)"); ax[1].legend(loc="upper left"); ax[1].grid(alpha=.3)
     fig.tight_layout(); fig.savefig(f"{OUT}/real_polarization_loss.png", dpi=140); plt.close(fig)
 
     pf = pd.DataFrame(rows)
