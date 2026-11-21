@@ -34,7 +34,7 @@ rows = [
  ["열화", "기준 열화율 (초기 500 h)", f"{deg0:.2f} %/kh (시뮬레이션)",
   "1.5 %/kh 이하", "1.5 ~ 3 %/kh: 관찰 연장", "3 %/kh 초과: 열화 이상"],
  ["열화", "급강하 (48 h 내 전압 하락)", "-12 mV (시뮬레이션 주입)",
-  "-6 mV 이내", "-6 ~ -12 mV: 로그·설비 점검", "-12 mV 초과: 운전 중단 후 원인 분석"],
+  "-6 mV 이내", "-6 ~ -12 mV: 로그·설비 점검", "12 mV를 넘는 하락: 원시 로그·운전 조건 우선 점검. 시험 지속·중단은 별도 SOP에 따름"],
  ["열화", "롤링 열화율 가속", "3.5 %/kh (시뮬레이션 주입)",
   "기준의 3배 미만", f"기준 3배 이상, 1.5 %/kh 미만", "기준 3배 이상 & 1.5 %/kh 이상: 가속 열화"],
 ]
@@ -48,10 +48,16 @@ with open(f"{OUT}/decision_table.md", "w", encoding="utf-8") as f:
     for r in rows: f.write("| " + " | ".join(r) + " |\n")
     f.write("\n열화 행의 기준값은 실측이 아니라 시뮬레이션입니다. 실제 양산 스택에는 자체 기준 곡선으로 다시 계산해야 합니다.\n")
 
-fig, ax = plt.subplots(figsize=(13, 6.2)); ax.axis("off")
-t = ax.table(cellText=rows, colLabels=cols, loc="center", cellLoc="left",
-             colWidths=[.06, .17, .22, .14, .19, .26])
-t.auto_set_font_size(False); t.set_fontsize(8.5); t.scale(1, 2.5)
+import textwrap
+WRAP = [6, 14, 18, 11, 15, 24]                      # 열별 줄바꿈 글자 수(한글 기준 근사)
+wrapped = [[textwrap.fill(c, w) for c, w in zip(r, WRAP)] for r in rows]
+nlines = [max(c.count(chr(10)) + 1 for c in r) for r in wrapped]
+fig, ax = plt.subplots(figsize=(14, 7.4)); ax.axis("off")
+t = ax.table(cellText=wrapped, colLabels=cols, loc="center", cellLoc="left",
+             colWidths=[.06, .15, .20, .14, .19, .26])
+t.auto_set_font_size(False); t.set_fontsize(8.5)
+for (r, c), cell in t.get_celld().items():
+    cell.set_height(0.07 if r == 0 else 0.045 * nlines[r - 1] + 0.02)
 for (r, c), cell in t.get_celld().items():
     if r == 0: cell.set_facecolor("#2f4b6e"); cell.set_text_props(color="white", weight="bold")
     elif c == 3: cell.set_facecolor("#e3f1e3")
