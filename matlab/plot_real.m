@@ -52,15 +52,27 @@ legend({'전압', '초기 기준 외삽'}, 'Location', 'southwest');
 title('장기 운전 전압과 탐지된 이벤트 (시뮬레이션)');
 exportgraphics(f3, fullfile(out, 'm_sim_degradation.png'), 'Resolution', 130);
 
-% 4) 판정 기준표 (표 그림)
+% 4) 판정 기준표 (일반 그림에 직접 그려 긴 문구를 줄바꿈한다)
 D = readtable(fullfile(out, 'decision_table.csv'), 'VariableNamingRule', 'preserve');
-f4 = uifigure('Position', [100 100 1500 330], 'Name', '시운전 합·부 판정 기준표');
-t = uitable(f4, 'Data', D, 'Position', [10 10 1480 310], 'FontSize', 12, ...
-    'ColumnWidth', {70, 190, 260, 170, 270, 440}, 'RowName', {});
-drawnow;
-try
-    exportapp(f4, fullfile(out, 'm_decision_table.png'));
-catch ME
-    disp(['표 그림 저장 실패: ' ME.message]);
+hdr = D.Properties.VariableNames;
+wid = [0.06 0.17 0.19 0.12 0.17 0.29];            % 열 너비(비율)
+nch = [5 14 30 12 18 30];                           % 열별 줄바꿈 글자 수(한글 기준 근사)
+f4 = figure('Position', [100 100 1600 520], 'Color', 'w');
+ax = axes(f4, 'Position', [0.01 0.02 0.98 0.96]); axis(ax, 'off'); xlim(ax, [0 1]); ylim(ax, [0 1]);
+x0 = [0 cumsum(wid(1:end-1))]; nrow = height(D);
+rh = 1 / (nrow + 1.2);
+for c = 1:numel(hdr)
+    text(ax, x0(c) + 0.005, 1 - rh*0.5, hdr{c}, 'FontWeight', 'bold', 'FontSize', 11, 'VerticalAlignment', 'middle');
 end
+line(ax, [0 1], [1 - rh, 1 - rh], 'Color', 'k');
+for r = 1:nrow
+    yc = 1 - rh*(r + 0.1) - rh*0.5;
+    if mod(r, 2) == 0, patch(ax, [0 1 1 0], yc + rh*0.5*[-1 -1 1 1] , [0.95 0.95 0.95], 'EdgeColor', 'none'); end
+    for c = 1:numel(hdr)
+        t = string(D{r, c});
+        t = strjoin(arrayfun(@(k) extractBetween(t, k, min(k + nch(c) - 1, strlength(t))), 1:nch(c):strlength(t)), newline);
+        text(ax, x0(c) + 0.005, yc, t, 'FontSize', 9.5, 'VerticalAlignment', 'middle', 'Interpreter', 'none');
+    end
+end
+exportgraphics(f4, fullfile(out, 'm_decision_table.png'), 'Resolution', 130);
 disp('MATLAB 그래프를 out/ 에 저장했습니다.');
