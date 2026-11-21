@@ -17,7 +17,7 @@ d = load()
 ref = {}
 for T, g in d.groupby("T_C"):
     p, _ = analyze(g)
-    ref[T] = dict(ocv=p["OCV"], v03=float(np.interp(0.3, g.j_A_cm2, g.V)), r=p["R_lin"])
+    ref[T] = dict(ocv=p["OCV"], v03=float(np.interp(0.3, g.j_A_cm2, g.V)), r=p["R_lin"], dev=p["top_dev_mV"])
 deg0, *_ = detect(simulate())
 
 def T3(f): return " / ".join(f(ref[t]) for t in (700, 750, 800))
@@ -29,7 +29,7 @@ rows = [
   "기준 ±3 %", "±3 ~ 6 %: 재측정", "-6 % 미만: 이상 의심 (아래 R_lin, 형상 확인)"],
  ["분극곡선", "선형 구간 면적저항 R_lin (옴+분극+연료이용 합산)", T3(lambda r: f"{r['r']:.2f}") + " Ω·cm²",
   "기준 x1.15 이하", "x1.15 ~ 1.30: 재측정", "x1.30 초과: 저항 증가. 연료 조성·이용률 먼저 확인 후 접촉·전극 열화 의심"],
- ["분극곡선", "고전류 끝점 직선 이탈", "0 ~ -1 mV (실측)",
+ ["분극곡선", "고전류 끝점 직선 이탈", f"{min(r['dev'] for r in ref.values()):.1f} ~ {max(r['dev'] for r in ref.values()):.1f} mV (실측)",
   "-5 mV 이내", "-5 ~ -10 mV: 유량 확인", "-10 mV 미만: 농도 손실 의심 (검출 민감도 한계 있음)"],
  ["열화", "기준 열화율 (초기 500 h)", f"{deg0:.2f} %/kh (시뮬레이션)",
   "1.5 %/kh 이하", "1.5 ~ 3 %/kh: 관찰 연장", "3 %/kh 초과: 열화 이상"],

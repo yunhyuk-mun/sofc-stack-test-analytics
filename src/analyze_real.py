@@ -4,7 +4,8 @@
  1) 선형 구간: j >= J_LIN 에서 V = V0 - R_lin*j 로 직선 피팅. R_lin은 옴 저항 + 선형 분극저항의 합산 면적저항이다.
     분극 곡선만으로는 옴 저항만 따로 뽑을 수 없다. (분리하려면 EIS가 필요하다.)
  2) 비선형 구간: 직선 아래로 급격히 벗어나는 저전류 구간. 총 손실에서 선형 저항분(R_lin*j)을 뺀 값으로 정의한다. 활성화 손실만이 아니라 OCV 편차와 연료이용에 따른 손실도 포함한다.
- 3) 농도 구간: 고전류 끝점 3개가 직선보다 아래로 얼마나 벗어나는지(mV)로 판정한다. 임계값은 가정값이다.
+ 3) 농도 구간: 끝점 3개를 뺀 중간 구간으로 직선을 피팅하고, 끝점 3개가 그 직선보다 아래로 얼마나 벗어나는지(mV)로 판정한다.
+    임계값은 가정값이며, 곡률이 있는 합성 곡선에서 검출되는지는 tests/test_curvature.py로 확인한다.
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
@@ -21,18 +22,44 @@ CONC_FLAG_MV = 5.0      # 고전류 끝점 이탈이 이 값 이상이면 농도
 R_GAS = 8.314
 
 
+N_EVAL = 3              # 곡률 판정에 쓰는 고전류 끝점 개수
+MIN_FIT_POINTS = 4      # 곡률 판정용 직선 피팅에 필요한 최소 점 수
+
+
+def curvature_deviation(j, v, jmin=J_LIN, n_eval=N_EVAL):
+    """곡률 판정: 끝점 n_eval개를 뺀 중간 구간으로 직선을 피팅하고, 끝점이 그 직선에서 평균 몇 mV 벗어나는지 구한다.
+    끝점을 피팅에 넣으면 직선이 함께 휘어 이탈이 작아지므로 피팅과 평가를 분리한다.
+    피팅 점이 MIN_FIT_POINTS보다 적으면 판정하지 않고 NaN을 돌려준다 (측정 범위가 짧은 곡선)."""
+    idx = np.where(j >= jmin)[0]
+    if len(idx) - n_eval < MIN_FIT_POINTS:
+        return float("nan")
+    fit_idx, eval_idx = idx[:-n_eval], idx[-n_eval:]
+    slope, v0 = np.polyfit(j[fit_idx], v[fit_idx], 1)
+    return float(np.mean(v[eval_idx] - (v0 + slope * j[eval_idx])) * 1000)
+
+
+def slope_ratio(j, v, jmin=J_LIN, k=4):
+    """참고 지표: 고전류 끝 구간 k점의 기울기 / 그 앞 구간 기울기. 농도 손실이 있으면 1을 넘어 커진다.
+    합성 곡선에서는 농도 손실이 없을 때 약 0.9, 한계전류 1.0 A/cm2일 때 약 1.1이었다. 판정 기준이 아니라 참고 값이다."""
+    idx = np.where(j >= jmin)[0]
+    if len(idx) < 2 * k:
+        return float("nan")
+    late, early = idx[-k:], idx[:len(idx) - k]
+    return float(np.polyfit(j[late], v[late], 1)[0] / np.polyfit(j[early], v[early], 1)[0])
+
+
 def analyze(g):
     j, v = g.j_A_cm2.values, g.V.values
     ocv = v[0]
     m = j >= J_LIN
-    slope, v0 = np.polyfit(j[m], v[m], 1)
+    slope, v0 = np.polyfit(j[m], v[m], 1)      # R_lin은 선형 구간 전체 점으로 구한다
     r_lin = -slope
     line = v0 + slope * j
     resid_mV = (v - line) * 1000
-    top = resid_mV[m][-3:].mean()              # 고전류 끝점 평균 이탈 (음수면 직선 아래)
+    top = curvature_deviation(j, v)            # 곡률 판정은 피팅과 평가 구간을 분리
     rmse = np.sqrt(np.mean(resid_mV[m] ** 2))
     return dict(T_C=int(g.T_C.iloc[0]), OCV=ocv, V0_intercept=v0, R_lin=r_lin, lin_rmse_mV=rmse,
-                top_dev_mV=top, conc_suspect=bool(top < -CONC_FLAG_MV),
+                top_dev_mV=top, conc_suspect=bool(top < -CONC_FLAG_MV), slope_ratio=slope_ratio(j, v),
                 j_max=j.max()), line
 
 

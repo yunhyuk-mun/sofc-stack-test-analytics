@@ -80,3 +80,13 @@ def classify(f: pd.DataFrame, spec=SPEC) -> pd.DataFrame:
             cause.append("low_performance")
     f["cause"] = cause
     return f
+
+
+# 분류 코드별 "관측"(데이터에서 본 것)과 "가설"(그 관측을 만드는 후보 원인). 가설은 점검 대상일 뿐 진단이 아니다.
+OBS_HYP = {
+    "gas_leak": ("단일 셀 저전압, 셀간 편차가 기준 초과", "가스 누설·시일 불량 등 점검 필요 (접촉 불량이나 셀 불량도 같은 패턴을 낼 수 있음)"),
+    "contact_degradation": ("한 셀의 열화율이 다른 셀보다 크게 높음", "접촉 저항 증가·체결 상태 등 점검 필요"),
+    "low_performance": ("스택 전체 평균 전압이 기준 미만", "제조 산포·연료 조건·계측 오차 등 점검 필요"),
+    "rig_suspect": ("평균 전압이 낮고 같은 호기 스택이 함께 낮음", "호기 온도·계측 정합성 점검 필요 (스택 결함으로 단정하지 않음)"),
+    "none": ("기준 이내", "-"),
+}

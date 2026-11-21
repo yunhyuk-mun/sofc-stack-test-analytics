@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from analyze import SPEC
+from analyze import SPEC, OBS_HYP
 plt.rcParams["font.family"] = "Malgun Gothic"; plt.rcParams["axes.unicode_minus"] = False
 OUT = os.path.join(os.path.dirname(__file__), "..", "out")
 os.makedirs(f"{OUT}/reports", exist_ok=True)
@@ -36,11 +36,13 @@ for r in pick:
     with open(f"{OUT}/reports/{sid}.md", "w", encoding="utf-8") as f:
         f.write(f"# 시험 성적서 {sid} (시뮬레이션 데이터)\n\n호기 {r.rig} | 시험 전류밀도 0.4 A/cm² | 500 h | 셀 30개\n\n")
         f.write("| 항목 | 측정값 | 기준 | 결과 |\n|---|---|---|---|\n")
-        f.write(f"| 초기 평균 셀전압 | {r.mean_V:.3f} V | {SPEC['mean_V_min']} V 이상 | {r.mean_zone} |\n")
-        f.write(f"| 초기 최저 셀전압 | {r.min_cell_V:.3f} V (셀 {int(r.min_cell)}) | {SPEC['cell_V_min']} V 이상 | {r.cell_zone} |\n")
-        f.write(f"| 셀간 편차 | {r.spread*1000:.0f} mV | {SPEC['spread_max']*1000:.0f} mV 이하 | {'PASS' if r.pass_spread else 'FAIL'} |\n")
-        f.write(f"| 스택 열화율 | {r.deg_pct_kh:.2f} %/kh | {SPEC['deg_max_pct_kh']} %/kh 이하 | {'PASS' if r.pass_deg else 'FAIL'} |\n")
-        f.write(f"| 최악 셀 열화율 | {r.worst_deg_pct_kh:.2f} %/kh (셀 {int(r.worst_deg_cell)}) | {SPEC['worst_cell_deg_max']} %/kh 이하 | {'PASS' if r.pass_worst else 'FAIL'} |\n\n")
-        f.write(f"**최종 판정: {r.final}**  원인 분류: {r.cause}\n\n점검 순서: {CHECK[r.cause]}\n\n![셀 전압]({sid}.png)\n\n")
-        f.write("기준값은 가정값이며 측정 불확도 약 2 mV(k=2)를 반영한 판정입니다. 실제 양산 성적서가 아닙니다.\n")
+        f.write(f"| 초기 평균 셀전압 | {r.mean_V:.3f} V | {SPEC['mean_V_min']} V 이상 | {r.zone_mean} |\n")
+        f.write(f"| 초기 최저 셀전압 | {r.min_cell_V:.3f} V (셀 {int(r.min_cell)}) | {SPEC['cell_V_min']} V 이상 | {r.zone_cell} |\n")
+        f.write(f"| 셀간 편차 | {r.spread*1000:.0f} mV | {SPEC['spread_max']*1000:.0f} mV 이하 | {r.zone_spread} |\n")
+        f.write(f"| 스택 열화율 | {r.deg_pct_kh:.2f} %/kh | {SPEC['deg_max_pct_kh']} %/kh 이하 | {r.zone_deg} |\n")
+        f.write(f"| 최악 셀 열화율 | {r.worst_deg_pct_kh:.2f} %/kh (셀 {int(r.worst_deg_cell)}) | {SPEC['worst_cell_deg_max']} %/kh 이하 | {r.zone_worst} |\n\n")
+        f.write(f"**최종 판정: {r.final}**\n\n")
+        f.write(f"관측: {OBS_HYP[r.cause][0]}\n\n가설(점검 대상): {OBS_HYP[r.cause][1]}\n\n")
+        f.write(f"점검 순서: {CHECK[r.cause]}\n\n![셀 전압]({sid}.png)\n\n")
+        f.write("기준값은 가정값이며 측정 불확도 약 2 mV(k=2)를 항목별로 반영한 판정입니다. 가설은 진단이 아니라 점검 대상입니다. 실제 양산 성적서가 아닙니다.\n")
 print([r["stack"] for r in pick], len(hist))
